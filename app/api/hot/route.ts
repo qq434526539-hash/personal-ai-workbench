@@ -1,0 +1,8 @@
+import {NextRequest,NextResponse} from "next/server";
+
+export const runtime="nodejs";
+export const dynamic="force-dynamic";
+const BASE=(process.env.DAILYHOT_API_URL||"http://127.0.0.1:6688").replace(/\/$/,"");
+const SOURCES=[{id:"weibo",label:"微博"},{id:"zhihu",label:"知乎"},{id:"douyin",label:"抖音"},{id:"bilibili",label:"B站"},{id:"36kr",label:"36氪"}] as const;
+function local(req:NextRequest){const host=req.headers.get("host")||"";return host.startsWith("127.0.0.1:")||host.startsWith("localhost:")}
+export async function GET(req:NextRequest){if(!local(req))return NextResponse.json({ok:false,error:"仅允许本机访问"},{status:403});const results=await Promise.all(SOURCES.map(async source=>{try{const response=await fetch(`${BASE}/${source.id}`,{cache:"no-store",signal:AbortSignal.timeout(15000)});if(!response.ok)throw new Error(`HTTP ${response.status}`);const payload=await response.json();return {...source,ok:payload.code===200,title:payload.title||source.label,link:payload.link||"",updateTime:payload.updateTime||null,fromCache:Boolean(payload.fromCache),items:Array.isArray(payload.data)?payload.data.slice(0,30).map((item:any,index:number)=>({rank:index+1,title:String(item.title||""),desc:String(item.desc||item.description||""),url:String(item.url||item.link||""),hot:item.hot??item.hotValue??item.score??null})):[]}}catch(error){return {...source,ok:false,title:source.label,link:"",updateTime:null,fromCache:false,items:[],error:error instanceof Error?error.message:"读取失败"}}}));const connected=results.some(source=>source.ok&&source.items.length>0);return NextResponse.json({ok:connected,service:BASE,updatedAt:new Date().toISOString(),sources:results},{status:connected?200:503,headers:{"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}})}
