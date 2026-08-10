@@ -1,5 +1,10 @@
 # Personal AI Workbench
 
+[![CI](https://github.com/qq434526539-hash/personal-ai-workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/qq434526539-hash/personal-ai-workbench/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+你可以直接克隆这个仓库，也可以点击 GitHub 的 **Use this template** 创建一份完全属于自己的工作台。
+
 一个以本地文件为数据底座的个人 AI 工作台，把知识、内容创作、热点、作品复盘和财经研究放进同一套可追溯流程。
 
 > 这个仓库只包含应用代码，不包含你的 Obsidian Vault、交割单、作品数据、API Key 或其他本机资料。
@@ -137,4 +142,4 @@ db/                 可选 Drizzle 数据层
 
 ## License
 
-当前仓库暂未指定开源许可证。公开使用或接受外部贡献前，请根据需要补充许可证。
+本项目使用 [MIT License](LICENSE)。使用本项目时请自行遵守所接入数据源、平台和第三方 API 的服务条款。
