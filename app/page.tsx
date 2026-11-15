@@ -510,7 +510,7 @@ function LiveStrip({ d, active }: { d: any; active: string }) {
           真实数据已连接
         </span>
         <b>
-          {d.stats.notes} 篇笔记 · {d.stats.folders} 个目录 · 本机只读
+          {d.stats.notes} 篇笔记 · {d.stats.folders} 个目录 · 浏览只读 / 上传受保护
         </b>
       </header>
       {active === "overview" ? (
