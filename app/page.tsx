@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import RealTrends from "./RealTrends";
 const mods = [
   [
@@ -44,6 +45,7 @@ const mods = [
     "把作品表现、留存和策略变化放在一起看。",
   ],
   ["wechat", "◌", "公众号", "公众号数据", "跟踪文章传播、互动和跨平台表现。"],
+  ["xiaohongshu", "✦", "小红书", "小红书数据", "跟踪账号、笔记与互动数据。"],
   [
     "finance",
     "¥",
@@ -1303,16 +1305,82 @@ function RealFinance({ d }: { d: any }) {
     </>
   );
 }
+
+const themes = [
+  ["white", "白"],
+  ["black", "黑"],
+  ["blue", "蓝"],
+  ["green", "绿"],
+];
+
+function UploadCenter({ target, onDone }: { target: string; onDone: () => void }) {
+  const [open, setOpen] = useState(false), [files, setFiles] = useState<FileList | null>(null),
+    [token, setToken] = useState(""), [message, setMessage] = useState(""), [busy, setBusy] = useState(false);
+  useEffect(() => setToken(sessionStorage.getItem("workbench-write-token") || ""), []);
+  const upload = async () => {
+    if (!files?.length || !token || busy) return;
+    setBusy(true); setMessage("");
+    const form = new FormData();
+    form.set("target", target);
+    Array.from(files).forEach((file) => form.append("files", file));
+    try {
+      const response = await fetch("/api/upload", { method: "POST", headers: { "x-workbench-token": token }, body: form });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "上传失败");
+      sessionStorage.setItem("workbench-write-token", token);
+      setMessage(`已保存 ${result.saved.length} 个文件到服务器`);
+      setFiles(null); onDone();
+    } catch (error) { setMessage(error instanceof Error ? error.message : "上传失败"); }
+    finally { setBusy(false); }
+  };
+  return <>
+    <button className="uploadOpen" onClick={() => setOpen(true)}>↑ 上传到当前模块</button>
+    {open && createPortal(<div className="modalShade" onClick={() => setOpen(false)}>
+      <section className="uploadModal" onClick={(event) => event.stopPropagation()}>
+        <button className="modalClose" onClick={() => setOpen(false)}>×</button>
+        <small>// SERVER UPLOAD</small><h2>上传到「{mods.find((item) => item[0] === target)?.[2]}」</h2>
+        <p>文件会分类保存到服务器；单个文件不超过 25MB，每次最多 20 个。</p>
+        <label className="dropzone"><input type="file" multiple onChange={(event) => setFiles(event.target.files)} />
+          <b>{files?.length ? `已选择 ${files.length} 个文件` : "选择文件或拖到这里"}</b>
+          <span>支持 Markdown、JSON、CSV、TSV、XLS/XLSX、PDF、电子书与图片</span>
+        </label>
+        <label className="tokenField">上传口令<input type="password" value={token} onChange={(event) => setToken(event.target.value)} placeholder="服务器 WORKBENCH_WRITE_TOKEN" /></label>
+        {message && <p className="uploadMessage">{message}</p>}
+        <button className="primary uploadSubmit" disabled={!files?.length || !token || busy} onClick={upload}>{busy ? "正在上传…" : "安全上传"}</button>
+      </section>
+    </div>, document.body)}
+  </>;
+}
+
+function SocialAccount({ platform }: { platform: "douyin" | "wechat" | "xiaohongshu" }) {
+  const [state, setState] = useState<any>(null), [message, setMessage] = useState("");
+  const load = () => fetch("/api/social-sync", { cache: "no-store" }).then((r) => r.json()).then((x) => setState(x.platforms?.find((p: any) => p.id === platform)));
+  useEffect(() => { load().catch(() => setMessage("无法读取接口状态")); }, [platform]);
+  const sync = async () => {
+    const token = sessionStorage.getItem("workbench-write-token") || prompt("请输入上传口令") || "";
+    if (!token) return;
+    setMessage("正在同步…");
+    const response = await fetch("/api/social-sync", { method: "POST", headers: { "x-workbench-token": token } });
+    const result = await response.json();
+    setMessage(response.ok ? "同步任务已完成" : result.error || "同步失败"); load();
+  };
+  return <article className="panel accountSync">
+    <div><small>// ACCOUNT API</small><h3>{state?.label || "账号数据"}</h3><p>{state?.configured ? `接口已配置${state.lastSync ? ` · 最近同步 ${new Date(state.lastSync).toLocaleString("zh-CN")}` : " · 等待首次同步"}` : "尚未配置官方接口或数据中转地址"}</p></div>
+    <button className="outline" onClick={sync} disabled={!state?.configured}>立即同步</button>
+    {message && <span>{message}</span>}
+  </article>;
+}
+
 export default function Home() {
   const [active, setActive] = useState("overview"),
     [q, setQ] = useState(""),
-    [live, setLive] = useState<any>(null);
+    [live, setLive] = useState<any>(null),
+    [theme, setTheme] = useState("white");
+  const refresh = () => fetch("/api/workbench", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).then(setLive);
   useEffect(() => {
     setActive(localStorage.getItem("wb") || "overview");
-    fetch("/api/workbench", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then(setLive)
-      .catch(() => setLive(null));
+    setTheme(localStorage.getItem("workbench-theme") || "white");
+    refresh().catch(() => setLive(null));
   }, []);
   const go = (x: string) => {
     setActive(x);
@@ -1342,18 +1410,13 @@ export default function Home() {
     );
   else if (active === "ideas") view = <RealIdeas d={live} />;
   else if (active === "content") view = <RealContent d={live} />;
-  else if (active === "douyin") view = <RealDouyin d={live} />;
-  else if (active === "wechat")
-    view = (
-      <ConnectionState
-        status={live.statuses.wechat}
-        detail="未发现公众号后台导出或接口凭证，因此不展示阅读量、互动率等演示指标。"
-      />
-    );
+  else if (active === "douyin") view = <><SocialAccount platform="douyin" /><RealDouyin d={live} /></>;
+  else if (active === "wechat") view = <SocialAccount platform="wechat" />;
+  else if (active === "xiaohongshu") view = <SocialAccount platform="xiaohongshu" />;
   else if (active === "finance") view = <RealFinance d={live} />;
   else view = <RealRuns d={live} />;
   return (
-    <div className="shell">
+    <div className="shell" data-theme={theme}>
       <aside className="side">
         <div className="brand">
           <b>W</b>
@@ -1382,6 +1445,12 @@ export default function Home() {
       <main>
         <header className="top">
           <span>// PERSONAL AI WORKBENCH · 8月5日 星期三</span>
+          <div className="topActions">
+            <div className="themePicker" aria-label="主题颜色">
+              {themes.map(([id, label]) => <button key={id} className={theme === id ? "active" : ""} data-color={id} onClick={() => { setTheme(id); localStorage.setItem("workbench-theme", id); }}>{label}</button>)}
+            </div>
+            <UploadCenter target={active} onDone={refresh} />
+          </div>
           <label>
             ⌕
             <input

@@ -46,3 +46,20 @@ test("documents the real local workbench setup", async () => {
   assert.match(packageJson, /"name": "personal-ai-workbench"/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 });
+
+test("protects server uploads and keeps scheduled sync isolated", async () => {
+  const [upload, social, compose, page] = await Promise.all([
+    read("app/api/upload/route.ts"),
+    read("app/api/social-sync/route.ts"),
+    read("deploy/docker-compose.yml"),
+    read("app/page.tsx"),
+  ]);
+  assert.match(upload, /WORKBENCH_WRITE_TOKEN/);
+  assert.match(upload, /MAX_BYTES = 25 \* 1024 \* 1024/);
+  assert.match(upload, /timingSafeEqual/);
+  assert.match(social, /SOCIAL_SYNC_TOKEN/);
+  assert.match(compose, /social-sync:/);
+  assert.match(compose, /\/data\/vault:rw/);
+  for (const theme of ["white", "black", "blue", "green"])
+    assert.match(page, new RegExp(`\\["${theme}",`));
+});
