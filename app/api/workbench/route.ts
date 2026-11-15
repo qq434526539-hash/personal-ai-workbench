@@ -71,7 +71,7 @@ function num(v: any) {
 }
 async function positions() {
   if (!FINANCE) return [];
-  const candidates = [path.join(FINANCE, "交割单.xls")];
+  const candidates: string[] = [];
   const uploadDir = path.join(FINANCE, "uploads");
   if (fs.existsSync(uploadDir))
     candidates.push(
@@ -80,6 +80,7 @@ async function positions() {
         .map((name) => path.join(uploadDir, name))
         .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs),
     );
+  candidates.push(path.join(FINANCE, "交割单.xls"));
   const f = candidates.find((file) => fs.existsSync(file));
   if (!f) return [];
   let table: any[][];
