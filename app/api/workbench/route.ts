@@ -87,7 +87,14 @@ async function positions() {
   if (f.toLowerCase().endsWith(".xlsx")) {
     table = (await readSheet(f)).map((row) => row.map((cell) => cell ?? ""));
   } else {
-    const text = new TextDecoder("gbk").decode(fs.readFileSync(f)).trim();
+    const bytes = fs.readFileSync(f);
+    let text: string;
+    try {
+      text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    } catch {
+      text = new TextDecoder("gbk").decode(bytes);
+    }
+    text = text.replace(/^\uFEFF/, "").trim();
     const delimiter = text.includes("\t") ? "\t" : ",";
     table = text.split(/\r?\n/).map((row) => row.split(delimiter));
   }
