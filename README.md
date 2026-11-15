@@ -127,6 +127,8 @@ docker compose up -d --build
 
 在 `.env` 中设置绑定 IP、端口、数据目录和允许访问 API 的主机名。`DailyHotApi` 只在 Compose 内部网络暴露，不占用宿主机端口。Obsidian 与财经目录以可写卷挂载，写入操作必须通过 `WORKBENCH_WRITE_TOKEN` 验证。
 
+Compose 部署时，`WORKBENCH_ALLOWED_HOSTS` 还应包含内部服务名 `workbench`，供不开放宿主机端口的每日同步容器调用。
+
 ### 网页上传与主题
 
 - 顶部可在白、黑、蓝、绿四套主题间切换，选择保存在当前浏览器。
