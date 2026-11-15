@@ -73,7 +73,7 @@ DAILYHOT_API_URL=http://127.0.0.1:6688
 
 ### Obsidian
 
-`OBSIDIAN_VAULT` 指向 Vault 根目录。工作台只读取文件，不修改 Vault。
+`OBSIDIAN_VAULT` 指向 Vault 根目录。浏览与分析接口只读取文件；只有通过上传口令验证的上传接口可以写入分类目录。
 
 如果 Vault 中存在 `03 Douyin`，应用会识别以下可选目录：
 
@@ -125,7 +125,18 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-在 `.env` 中设置绑定 IP、端口、数据目录和允许访问 API 的主机名。`DailyHotApi` 只在 Compose 内部网络暴露，不占用宿主机端口。Obsidian 与财经目录以只读卷挂载。
+在 `.env` 中设置绑定 IP、端口、数据目录和允许访问 API 的主机名。`DailyHotApi` 只在 Compose 内部网络暴露，不占用宿主机端口。Obsidian 与财经目录以可写卷挂载，写入操作必须通过 `WORKBENCH_WRITE_TOKEN` 验证。
+
+### 网页上传与主题
+
+- 顶部可在白、黑、蓝、绿四套主题间切换，选择保存在当前浏览器。
+- 每个侧边栏模块都可通过“上传到当前模块”把文件分类保存到服务器。
+- 单文件上限 25MB，每次最多 20 个；不要把上传口令提交到 Git。
+- 财经中心支持 CSV、TSV、XLSX，以及券商导出的文本型 XLS。表头可使用“证券代码/证券名称/成交数量/成交均价/成交日期/买卖标志”。
+
+### 社媒账号接口
+
+抖音、公众号和小红书支持配置返回 JSON 的账号数据接口。分别设置 `DOUYIN_ACCOUNT_API_URL`、`WECHAT_ACCOUNT_API_URL`、`XIAOHONGSHU_ACCOUNT_API_URL`，如需 Bearer Token，再设置对应的 `_TOKEN`。Compose 中的 `social-sync` 服务启动后立即同步一次，随后每 24 小时同步；接口未配置时会安全跳过，不生成演示数据。
 
 ## 数据与隐私
 
@@ -137,7 +148,7 @@ docker compose up -d --build
 - `node_modules`、构建目录、缓存和日志
 - DeepSeek API Key 或其他凭据
 
-把项目部署到公网前需要重新设计身份验证和数据访问策略。当前本地文件接口有意限制为 `localhost`，这个项目优先面向个人电脑上的本地使用场景。
+把项目部署到公网前需要重新设计完整的身份验证和数据访问策略。当前接口仅允许配置过的主机名访问，写入还需要独立口令；这个项目仍优先面向个人电脑和可信家庭局域网。
 
 ## 项目结构
 

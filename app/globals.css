@@ -17,6 +17,17 @@ body {
   color: var(--ink);
   font-family: Arial, "Microsoft YaHei", sans-serif;
 }
+.shell[data-theme="white"] { --ink:#171817; --muted:#7d817d; --line:#e5e7e3; --bg:#f5f6f3; --purple:#246bfd; --soft:#eaf2ff; --surface:#fff; --green:#179c67; }
+.shell[data-theme="black"] { --ink:#edf3fa; --muted:#93a1b2; --line:#253244; --bg:#07101b; --purple:#53a7ff; --soft:#102a45; --surface:#0d1826; --green:#45d79b; color-scheme:dark; }
+.shell[data-theme="blue"] { --ink:#10284a; --muted:#607995; --line:#c9dcf1; --bg:#eaf4ff; --purple:#0868cf; --soft:#d5eaff; --surface:#f8fbff; --green:#138b68; }
+.shell[data-theme="green"] { --ink:#13352b; --muted:#668277; --line:#cfe0d7; --bg:#edf7f1; --purple:#08785b; --soft:#d8eee3; --surface:#fbfefc; --green:#07895e; }
+.shell { background:var(--bg); color:var(--ink); }
+.shell .side, .shell .panel, .shell .stats, .shell .stats button, .shell .top label,
+.shell .top label > div, .shell .top label > div button, .shell .title > span,
+.shell input, .shell textarea, .shell select { background:var(--surface,#fff); color:var(--ink); border-color:var(--line); }
+.shell[data-theme="black"] .side { background:#0a1522ee; }
+.shell[data-theme="black"] .dark { background:#050a11; }
+.shell[data-theme="black"] .side nav button:hover { background:#102234; }
 button,
 input,
 textarea {
@@ -121,6 +132,30 @@ textarea {
   justify-content: space-between;
   align-items: center;
 }
+.topActions { margin-left:auto; display:flex; align-items:center; gap:10px; }
+.themePicker { display:flex; padding:3px; border:1px solid var(--line); background:var(--surface,#fff); border-radius:18px; }
+.themePicker button { width:29px; height:29px; padding:0; border:0; border-radius:50%; background:transparent; color:var(--muted); cursor:pointer; font-size:11px; }
+.themePicker button.active { background:var(--soft); color:var(--purple); font-weight:800; }
+.uploadOpen { height:36px; padding:0 14px; border:1px solid var(--purple); border-radius:18px; background:var(--purple); color:white; cursor:pointer; font-size:12px; font-weight:700; }
+.modalShade { position:fixed; inset:0; z-index:100; display:grid; place-items:center; background:#00101bbb; backdrop-filter:blur(8px); padding:20px; }
+.uploadModal { position:relative; width:min(560px,100%); background:var(--surface,#fff); border:1px solid var(--line); border-radius:24px; padding:30px; box-shadow:0 28px 90px #0006; }
+.uploadModal > small, .accountSync small { color:var(--purple); font:700 10px monospace; letter-spacing:2px; }
+.uploadModal h2 { margin:10px 0 6px; font:700 28px Georgia,"Songti SC",serif; }
+.uploadModal > p { color:var(--muted); font-size:13px; }
+.modalClose { position:absolute; right:18px; top:14px; border:0; background:transparent; color:var(--muted); font-size:28px; cursor:pointer; }
+.dropzone { min-height:150px; display:grid; place-items:center; align-content:center; gap:8px; margin:22px 0; border:1px dashed var(--purple); border-radius:16px; background:var(--soft); cursor:pointer; text-align:center; }
+.dropzone input { position:absolute; opacity:0; pointer-events:none; }
+.dropzone span { color:var(--muted); font-size:11px; }
+.tokenField { display:grid; gap:7px; font-size:12px; font-weight:700; }
+.tokenField input { height:42px; border:1px solid var(--line); border-radius:10px; padding:0 12px; }
+.uploadSubmit { width:100%; margin-top:16px; height:43px; border:0; border-radius:11px; }
+.uploadSubmit:disabled { opacity:.45; }
+.uploadMessage { color:var(--purple)!important; }
+.accountSync { display:flex; align-items:center; gap:20px; margin-bottom:18px; }
+.accountSync h3 { margin:6px 0; }
+.accountSync p { margin:0; color:var(--muted); }
+.accountSync button { margin-left:auto; }
+.accountSync > span { font-size:12px; color:var(--purple); }
 .top > span,
 .ph span {
   color: var(--purple);
@@ -1909,4 +1944,46 @@ select {
     opacity: 0.35;
     box-shadow: 0 0 18px var(--cyan);
   }
+}
+
+/* User-selectable color systems. Kept last so they override the legacy skin. */
+.shell[data-theme="white"] { background:#f4f6f8; color:#17212b; }
+.shell[data-theme="white"] .side,
+.shell[data-theme="white"] .panel,
+.shell[data-theme="white"] .stats,
+.shell[data-theme="white"] .stats button,
+.shell[data-theme="white"] .cards article,
+.shell[data-theme="white"] .metrics article,
+.shell[data-theme="white"] .news,
+.shell[data-theme="white"] .holdings,
+.shell[data-theme="white"] .kanban > section,
+.shell[data-theme="white"] .kanban article,
+.shell[data-theme="white"] .top,
+.shell[data-theme="white"] .top label { background:#fff; color:#17212b; }
+.shell[data-theme="white"] .side { border-color:#dce3ea; }
+.shell[data-theme="white"] .toolbar > div { background:#eef3f8; }
+.shell[data-theme="white"] .title h1,
+.shell[data-theme="white"] h2,
+.shell[data-theme="white"] h3 { color:#17212b; text-shadow:none; }
+.shell[data-theme="white"] p,
+.shell[data-theme="white"] small { color:#687786; }
+.shell[data-theme="white"] .livebox { background:#f8fbff; }
+.shell[data-theme="blue"] { background:#061a33; --cyan:#6db9ff; --blue:#2c86e8; }
+.shell[data-theme="blue"] .side { background:#071f3a; }
+.shell[data-theme="blue"] .panel { background:#0a2543; }
+.shell[data-theme="green"] { background:#071c18; --cyan:#52e0ae; --blue:#168e68; }
+.shell[data-theme="green"] .side { background:#09231d; }
+.shell[data-theme="green"] .panel { background:#0d2b24; }
+.shell[data-theme="green"] .side nav button.active { background:#103d32; color:#62e0b4; }
+.modalShade { position:fixed; inset:0; z-index:1000; display:grid; place-items:center; background:#00101bcc; backdrop-filter:blur(8px); padding:20px; }
+.uploadModal { position:relative; width:min(560px,100%); color:#eaf4ff; background:#0d1e31; border:1px solid #284563; border-radius:24px; padding:30px; box-shadow:0 28px 90px #0009; }
+.uploadModal input { background:#091827; color:#eaf4ff; }
+@media (max-width:1200px) {
+  .top > span { display:none; }
+  .topActions { margin-left:0; }
+}
+@media (max-width:850px) {
+  .top { height:auto; min-height:72px; flex-wrap:wrap; padding:10px 0; }
+  .top label { order:3; width:100%; }
+  .topActions { width:100%; justify-content:space-between; }
 }

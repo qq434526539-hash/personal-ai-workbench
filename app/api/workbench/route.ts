@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "node:fs";
 import path from "node:path";
+import { readSheet } from "read-excel-file/node";
 import { isAllowedRequest } from "../request-access";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -68,25 +69,38 @@ function num(v: any) {
   const n = Number(String(v ?? "").replace(/[% ,]/g, ""));
   return Number.isFinite(n) ? n : 0;
 }
-function positions() {
+async function positions() {
   if (!FINANCE) return [];
-  const f = path.join(FINANCE, "交割单.xls");
-  if (!fs.existsSync(f)) return [];
-  const rows = new TextDecoder("gbk")
-      .decode(fs.readFileSync(f))
-      .trim()
-      .split(/\r?\n/),
-    head = rows.shift()!.split("\t"),
+  const candidates = [path.join(FINANCE, "交割单.xls")];
+  const uploadDir = path.join(FINANCE, "uploads");
+  if (fs.existsSync(uploadDir))
+    candidates.push(
+      ...fs.readdirSync(uploadDir)
+        .filter((name) => /\.(xlsx|xls|csv|tsv)$/i.test(name))
+        .map((name) => path.join(uploadDir, name))
+        .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs),
+    );
+  const f = candidates.find((file) => fs.existsSync(file));
+  if (!f) return [];
+  let table: any[][];
+  if (f.toLowerCase().endsWith(".xlsx")) {
+    table = (await readSheet(f)).map((row) => row.map((cell) => cell ?? ""));
+  } else {
+    const text = new TextDecoder("gbk").decode(fs.readFileSync(f)).trim();
+    const delimiter = text.includes("\t") ? "\t" : ",";
+    table = text.split(/\r?\n/).map((row) => row.split(delimiter));
+  }
+  const head = table.shift()?.map(String) || [],
     ix = (s: string) => head.indexOf(s),
     map = new Map<string, any>();
-  for (const row of rows) {
-    const c = row.split("\t"),
-      code = c[ix("证券代码")],
-      name = c[ix("证券名称")];
+  for (const c of table) {
+    const code = String(c[ix("证券代码")] ?? c[ix("代码")] ?? "").trim(),
+      name = String(c[ix("证券名称")] ?? c[ix("名称")] ?? "").trim();
     if (!code) continue;
-    const qty = num(c[ix("成交数量")]),
-      price = num(c[ix("成交均价")]),
-      date = c[ix("成交日期")],
+    let qty = num(c[ix("成交数量")] ?? c[ix("数量")]),
+      price = num(c[ix("成交均价")] ?? c[ix("成交价格")] ?? c[ix("价格")]),
+      date = String(c[ix("成交日期")] ?? c[ix("日期")] ?? ""),
+      side = String(c[ix("买卖标志")] ?? c[ix("操作")] ?? ""),
       x = map.get(code) || {
         code,
         name,
@@ -96,6 +110,7 @@ function positions() {
         buys: 0,
         sells: 0,
       };
+    if (/卖/.test(side) && qty > 0) qty = -qty;
     x.quantity += qty;
     if (date >= x.lastDate) {
       x.lastDate = date;
@@ -223,7 +238,7 @@ export async function GET(req: NextRequest) {
         .map((f) => note(f, f.startsWith(VAULT) ? VAULT : FINANCE))
         .sort((a, b) => b.updated.localeCompare(a.updated))
         .slice(0, 12),
-      holdings = positions(),
+      holdings = await positions(),
       actions: any[] = [];
     holdings
       .filter((x) => x.buys >= 5)

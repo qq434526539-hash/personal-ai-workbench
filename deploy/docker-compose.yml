@@ -6,6 +6,7 @@ services:
       context: ..
       dockerfile: Dockerfile
     restart: unless-stopped
+    user: "${WORKBENCH_UID:-1000}:${WORKBENCH_GID:-1000}"
     env_file:
       - .env
     environment:
@@ -14,8 +15,8 @@ services:
     ports:
       - "${WORKBENCH_BIND_IP:-127.0.0.1}:${WORKBENCH_PORT:-3010}:3010"
     volumes:
-      - "${WORKBENCH_DATA_ROOT:-./data}/vault:/data/vault:ro"
-      - "${WORKBENCH_DATA_ROOT:-./data}/finance:/data/finance:ro"
+      - "${WORKBENCH_DATA_ROOT:-./data}/vault:/data/vault:rw"
+      - "${WORKBENCH_DATA_ROOT:-./data}/finance:/data/finance:rw"
     depends_on:
       dailyhot:
         condition: service_healthy
@@ -28,6 +29,29 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
+
+  social-sync:
+    image: personal-ai-workbench-workbench
+    restart: unless-stopped
+    user: "${WORKBENCH_UID:-1000}:${WORKBENCH_GID:-1000}"
+    init: true
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    command:
+      - node
+      - -e
+      - >-
+        const run=()=>fetch('http://workbench:3010/api/social-sync',{method:'POST',headers:{'host':process.env.WORKBENCH_SYNC_HOST||'192.168.31.141','x-sync-token':process.env.SOCIAL_SYNC_TOKEN||''}}).then(r=>r.text()).then(x=>console.log(new Date().toISOString(),x)).catch(console.error);run();setInterval(run,86400000)
+    volumes:
+      - "${WORKBENCH_DATA_ROOT:-./data}/vault:/data/vault:rw"
+    depends_on:
+      workbench:
+        condition: service_healthy
+    networks:
+      workbench:
+        ipv4_address: 172.23.0.12
 
   dailyhot:
     image: imsyy/dailyhot-api:latest
