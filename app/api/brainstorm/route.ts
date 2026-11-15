@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "node:fs";
 import path from "node:path";
+import { isAllowedRequest } from "../request-access";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const VAULT = process.env.OBSIDIAN_VAULT || "",
@@ -12,16 +13,6 @@ function setting(name: string) {
   const raw = fs.readFileSync(LOCAL_ENV, "utf8").replace(/^\uFEFF/, "");
   const line = raw.split(/\r?\n/).find((x) => x.trim().startsWith(name + "="));
   return line ? line.slice(line.indexOf("=") + 1).trim() : "";
-}
-function local(req: NextRequest) {
-  const h = req.headers.get("host") || "",
-    o = req.headers.get("origin") || "";
-  return (
-    (h.startsWith("127.0.0.1:") || h.startsWith("localhost:")) &&
-    (!o ||
-      o.startsWith("http://127.0.0.1:") ||
-      o.startsWith("http://localhost:"))
-  );
 }
 function allowed() {
   return setting("BRAINSTORM_ALLOW_DIRS")
@@ -42,8 +33,8 @@ function files() {
   const dirs = allowed(),
     out: string[] = [];
   for (const rel of dirs) {
-    const root = path.resolve(VAULT, rel),
-      base = path.resolve(VAULT);
+    const root = path.resolve(/* turbopackIgnore: true */ VAULT, rel),
+      base = path.resolve(/* turbopackIgnore: true */ VAULT);
     if (!root.startsWith(base) || !fs.existsSync(root) || forbidden(rel))
       continue;
     function walk(d: string) {
@@ -93,7 +84,7 @@ function retrieve(q: string) {
     }));
 }
 export async function GET(req: NextRequest) {
-  if (!local(req))
+  if (!isAllowedRequest(req, true))
     return NextResponse.json({ error: "仅允许本机访问" }, { status: 403 });
   return NextResponse.json(
     {
@@ -108,7 +99,7 @@ export async function GET(req: NextRequest) {
   );
 }
 export async function POST(req: NextRequest) {
-  if (!local(req))
+  if (!isAllowedRequest(req, true))
     return NextResponse.json({ error: "仅允许本机访问" }, { status: 403 });
   const key = setting("DEEPSEEK_API_KEY");
   if (!key)
