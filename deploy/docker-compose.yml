@@ -1,0 +1,56 @@
+name: personal-ai-workbench
+
+services:
+  workbench:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DAILYHOT_API_URL: http://dailyhot:6688
+    ports:
+      - "${WORKBENCH_BIND_IP:-127.0.0.1}:${WORKBENCH_PORT:-3010}:3010"
+    volumes:
+      - "${WORKBENCH_DATA_ROOT:-./data}/vault:/data/vault:ro"
+      - "${WORKBENCH_DATA_ROOT:-./data}/finance:/data/finance:ro"
+    depends_on:
+      dailyhot:
+        condition: service_healthy
+    networks:
+      workbench:
+        ipv4_address: 172.23.0.10
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3010/').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  dailyhot:
+    image: imsyy/dailyhot-api:latest
+    restart: unless-stopped
+    environment:
+      PORT: "6688"
+      CACHE_TTL: "1800"
+      ALLOWED_DOMAIN: "*"
+    expose:
+      - "6688"
+    networks:
+      workbench:
+        ipv4_address: 172.23.0.11
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:6688/all').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+networks:
+  workbench:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.23.0.0/16

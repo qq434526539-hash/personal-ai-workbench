@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "node:fs";
 import path from "node:path";
+import { isAllowedRequest } from "../request-access";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const VAULT = process.env.OBSIDIAN_VAULT || "",
   FINANCE = process.env.FINANCE_PROJECT || "",
   DY = VAULT ? path.join(VAULT, "03 Douyin") : "";
-function local(req: NextRequest) {
-  const h = req.headers.get("host") || "";
-  return h.startsWith("127.0.0.1:") || h.startsWith("localhost:");
-}
 function sensitive(name: string) {
   return /密码|账号密码|credential|password|secret|token|api.?key/i.test(name);
 }
@@ -116,7 +113,7 @@ function positions() {
     }));
 }
 export async function GET(req: NextRequest) {
-  if (!local(req))
+  if (!isAllowedRequest(req))
     return NextResponse.json(
       { ok: false, error: "仅允许本机访问" },
       { status: 403 },

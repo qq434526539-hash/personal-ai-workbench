@@ -115,6 +115,18 @@ npm test
 
 Windows 本地开发默认使用 Next.js；生产构建使用 Vinext。
 
+## Docker Compose 部署
+
+仓库提供独立的 Compose 模板：
+
+```bash
+cd deploy
+cp .env.example .env
+docker compose up -d --build
+```
+
+在 `.env` 中设置绑定 IP、端口、数据目录和允许访问 API 的主机名。`DailyHotApi` 只在 Compose 内部网络暴露，不占用宿主机端口。Obsidian 与财经目录以只读卷挂载。
+
 ## 数据与隐私
 
 以下内容不会被仓库包含：
